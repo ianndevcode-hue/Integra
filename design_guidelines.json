@@ -1,0 +1,111 @@
+{
+  "theme_and_archetype": {
+    "theme": "LIGHT",
+    "archetype": "Archetype 4 (Swiss & High-Contrast)",
+    "reasoning": "For an ERP, Admin Panel, and POS, data clarity and functional authority are paramount. Swiss & High-Contrast provides a clean, highly structured base. We inject the requested brand colors (Blue, Green, Purple) to create a 'Modern Tech' feeling without muddying data visibility."
+  },
+  "brand": {
+    "name": "Integra SYS",
+    "company": "Integra Code",
+    "logo_url": "https://customer-assets.emergentagent.com/job_4e2cd625-ade9-4dd7-89bf-7caab1ef00f2/artifacts/tbyxp0yk_image.png",
+    "visual_identity": "Modern, clean, technological, responsive, and professional"
+  },
+  "typography": {
+    "primary_heading_font": "Outfit",
+    "secondary_body_font": "IBM Plex Sans",
+    "rules": {
+      "h1": "text-4xl sm:text-5xl tracking-tight font-bold text-slate-900",
+      "h2": "text-2xl sm:text-3xl tracking-tight font-semibold text-slate-800",
+      "h3": "text-xl sm:text-2xl font-medium text-slate-800",
+      "body": "text-base leading-relaxed text-slate-600",
+      "labels_and_overlines": "text-xs tracking-[0.2em] uppercase font-semibold text-slate-500",
+      "data_numbers": "font-mono font-medium tracking-tight"
+    }
+  },
+  "colors": {
+    "backgrounds": {
+      "app_bg": "#F8FAFC",
+      "surface_bg": "#FFFFFF",
+      "glass_overlay": "bg-white/80 backdrop-blur-xl"
+    },
+    "text": {
+      "primary": "#0F172A",
+      "secondary": "#475569",
+      "muted": "#94A3B8"
+    },
+    "brand_accents": {
+      "blue_primary": "#2563EB",
+      "green_success": "#10B981",
+      "purple_premium": "#8B5CF6",
+      "blue_hover": "#1D4ED8",
+      "green_hover": "#059669",
+      "purple_hover": "#7C3AED"
+    },
+    "borders": {
+      "default": "#E2E8F0",
+      "focus_ring": "#2563EB"
+    },
+    "application_mapping": {
+      "admin_master": "Use Purple (#8B5CF6) as the primary interaction color to denote Master/God-level access and premium control.",
+      "web_saas": "Use Blue (#2563EB) as the primary interaction color for daily business tasks, representing trust and corporate stability.",
+      "mobile_pos": "Use Green (#10B981) for primary actions (Sales, Payments, Checkout) to denote success and fast monetary flow. Use Red for cancellations."
+    }
+  },
+  "layout_and_spacing": {
+    "general": "Generous spacing (p-6, p-8) for Web/Admin containers. Structural grids with 1px borders.",
+    "border_radius": "Subtle rounded corners (rounded-lg, max 8px) to maintain a crisp, technological feel. Do not use fully rounded pill shapes except for status badges.",
+    "shadows": "Avoid heavy drop shadows. Use 1px borders (border-slate-200) for definition. Use soft shadow-sm only on hover states or floating command palettes.",
+    "dashboard_grid": "Control Room Grid: grid-cols-1 md:grid-cols-3 lg:grid-cols-4 with tight gaps (gap-4 or gap-6). Cards must use h-full to stretch equally."
+  },
+  "components": {
+    "buttons": "Flat backgrounds with sharp text contrast. Must include data-testid. Hover state should darken background slightly.",
+    "inputs": "Shadcn Input, Select, and Command. 1px solid border, ring-2 on focus with brand color.",
+    "tables": "Data-dense, row borders only (no vertical lines). Use sticky headers and right-align numerical data (financials, stock).",
+    "navigation": "Sidebar for Web SaaS and Admin Master. Bottom sheet or large tab bar for Mobile POS. Always include Command Palette (Cmd+K) for quick search.",
+    "cards": "Cardless aesthetic or flat white surfaces with 1px border. No drop shadow by default."
+  },
+  "apps_architecture": {
+    "1_admin_master": {
+      "focus": "High-level management of the multi-tenant environment.",
+      "key_views": ["Dashboard Analytics", "Clients & Subscriptions", "Licenses & API Keys", "Audit Logs", "Support Tickets"],
+      "vibe": "Command center. High data density. Accent color: Purple."
+    },
+    "2_web_saas": {
+      "focus": "Daily business operations for the client.",
+      "key_views": ["Business Dashboard (Charts)", "Products/Services CRUD", "Inventory Management", "Financials (Payable/Receivable)", "Fiscal (NF-e)"],
+      "vibe": "Clean, trustworthy, organized. Calm design to reduce cognitive overload. Accent color: Blue."
+    },
+    "3_mobile_pos": {
+      "focus": "Fast, high-stress retail environments.",
+      "key_views": ["Quick Sale / Cart", "Cash Register Open/Close", "Payments & NFC-e", "Offline Sync Status"],
+      "vibe": "Touch-optimized. Large tap targets. Clear color coding (Green = Pay, Red = Cancel). Left side for product grid, Right side for active cart. Accent color: Green."
+    }
+  },
+  "interactions_and_motion": {
+    "hover": "All clickable items must have a clear hover state (bg color shift or text color shift).",
+    "transitions": "Use transition-all duration-200 ease-in-out.",
+    "loading": "Use skeleton loaders matching the bento grid shape instead of spinners."
+  },
+  "media": {
+    "image_urls": [
+      {
+        "category": "abstract_tech_background",
+        "url": "https://images.pexels.com/photos/17485706/pexels-photo-17485706.png",
+        "description": "Abstract 3D blocks. Use for Admin or SaaS login screen background with a glassmorphism overlay."
+      },
+      {
+        "category": "pos_placeholder",
+        "url": "https://images.pexels.com/photos/12935042/pexels-photo-12935042.jpeg",
+        "description": "Modern POS setup. Use as a placeholder image for onboarding or empty states in the POS app."
+      },
+      {
+        "category": "team_office",
+        "url": "https://images.pexels.com/photos/12903168/pexels-photo-12903168.jpeg",
+        "description": "Business team. Use for the Users/Permissions section empty state or Support module."
+      }
+    ]
+  },
+  "icons": "Use lucide-react (default) for fast setup and clean tech look, or @phosphor-icons/react if extreme density is required.",
+  "testing": "CRITICAL: All interactive elements (buttons, links, inputs, tabs) MUST have a kebab-case data-testid attribute (e.g., data-testid='admin-login-button', data-testid='pos-checkout').",
+  "instructions_to_main_agent": "1. Import Outfit and IBM Plex Sans from Google Fonts. 2. Build the 3 sub-apps using distinct primary interaction colors (Admin=Purple, SaaS=Blue, POS=Green). 3. Use Shadcn UI but flatten the aesthetics (1px borders, minimal shadow, h-full cards). 4. Build a responsive sidebar for Web/Admin, and a side-by-side tablet view for Mobile POS. 5. Integrate the Integra Code logo where brand presence is required. 6. DO NOT FORGET data-testid ON ALL INTERACTIVE ELEMENTS."
+}
