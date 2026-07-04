@@ -953,3 +953,93 @@ async def get_cashflow(request: Request):
     for item in flow:
         item["balance"] = round(item["income"] - item["expense"], 2)
     return flow
+
+
+
+# ===== QUOTES (Orçamentos) =====
+@router.get("/quotes")
+async def list_quotes(request: Request, page: int = 1, limit: int = 50):
+    from server import db
+    tid, user = await get_tenant_id(request)
+    total = await db.quotes.count_documents({"tenant_id": tid})
+    skip = (page - 1) * limit
+    items = await db.quotes.find({"tenant_id": tid}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    return {"data": serialize_list(items), "total": total, "page": page}
+
+
+@router.post("/quotes")
+async def create_quote(data: dict, request: Request):
+    from server import db
+    tid, user = await get_tenant_id(request)
+    # Generate number
+    last = await db.quotes.find({"tenant_id": tid}).sort("created_at", -1).limit(1).to_list(1)
+    num = 1
+    if last:
+        try:
+            num = int(last[0].get("quote_number", "ORC-0").split("-")[1]) + 1
+        except:
+            num = 1
+    
+    data["tenant_id"] = tid
+    data["quote_number"] = f"ORC-{num:04d}"
+    data["status"] = "draft"
+    data["user_name"] = user.get("name")
+    validity = data.pop("validity_days", 15)
+    data["expires_at"] = (datetime.now(timezone.utc) + timedelta(days=validity)).isoformat()
+    data["created_at"] = datetime.now(timezone.utc).isoformat()
+    result = await db.quotes.insert_one(data)
+    data["_id"] = str(result.inserted_id)
+    data["id"] = data["_id"]
+    return data
+
+
+@router.patch("/quotes/{quote_id}/status")
+async def update_quote_status(quote_id: str, data: dict, request: Request):
+    from server import db
+    tid, user = await get_tenant_id(request)
+    await db.quotes.update_one({"_id": ObjectId(quote_id), "tenant_id": tid}, {"$set": {"status": data.get("status"), "updated_at": datetime.now(timezone.utc).isoformat()}})
+    quote = await db.quotes.find_one({"_id": ObjectId(quote_id)})
+    return serialize_doc(quote)
+
+
+# ===== ORDERS (Pedidos) =====
+@router.get("/orders")
+async def list_orders(request: Request, page: int = 1, limit: int = 50):
+    from server import db
+    tid, user = await get_tenant_id(request)
+    total = await db.orders.count_documents({"tenant_id": tid})
+    skip = (page - 1) * limit
+    items = await db.orders.find({"tenant_id": tid}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    return {"data": serialize_list(items), "total": total, "page": page}
+
+
+@router.post("/orders")
+async def create_order(data: dict, request: Request):
+    from server import db
+    tid, user = await get_tenant_id(request)
+    last = await db.orders.find({"tenant_id": tid}).sort("created_at", -1).limit(1).to_list(1)
+    num = 1
+    if last:
+        try:
+            num = int(last[0].get("order_number", "PED-0").split("-")[1]) + 1
+        except:
+            num = 1
+    
+    data["tenant_id"] = tid
+    data["order_number"] = f"PED-{num:04d}"
+    data["status"] = data.get("status", "pending")
+    data["user_name"] = user.get("name")
+    data["created_at"] = datetime.now(timezone.utc).isoformat()
+    result = await db.orders.insert_one(data)
+    data["_id"] = str(result.inserted_id)
+    data["id"] = data["_id"]
+    return data
+
+
+@router.patch("/orders/{order_id}/status")
+async def update_order_status(order_id: str, data: dict, request: Request):
+    from server import db
+    tid, user = await get_tenant_id(request)
+    await db.orders.update_one({"_id": ObjectId(order_id), "tenant_id": tid}, {"$set": {"status": data.get("status"), "updated_at": datetime.now(timezone.utc).isoformat()}})
+    order = await db.orders.find_one({"_id": ObjectId(order_id)})
+    return serialize_doc(order)
