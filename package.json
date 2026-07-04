@@ -2,8 +2,7 @@
   "name": "integra-sys",
   "version": "1.0.0",
   "private": true,
-  "description": "Integra SYS - ERP/PDV SaaS multi-tenant com módulo fiscal real (NF-e 55 / NFC-e 65) via NFePHP/sped-nfe",
-  "packageManager": "pnpm@10.33.3",
+  "description": "Integra SYS - ERP/PDV SaaS multi-tenant com m\u00f3dulo fiscal real (NF-e 55 / NFC-e 65) via NFePHP/sped-nfe",
   "engines": {
     "node": ">=20"
   },
