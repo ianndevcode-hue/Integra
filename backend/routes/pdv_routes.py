@@ -317,3 +317,206 @@ async def cash_register_history(request: Request, page: int = 1, limit: int = 10
     skip = (page - 1) * limit
     registers = await db.cash_registers.find({"tenant_id": tid, "status": "closed"}).sort("closed_at", -1).skip(skip).limit(limit).to_list(limit)
     return {"data": serialize_list(registers), "total": total, "page": page}
+
+
+# ===== RESTAURANT MODE - TABLES & ORDERS =====
+@router.get("/tables")
+async def list_tables(request: Request):
+    from server import db
+    tid, user = await get_pdv_user(request)
+    tables = await db.restaurant_tables.find({"tenant_id": tid}).sort("number", 1).to_list(100)
+    if not tables:
+        # Auto-create default tables
+        default_tables = []
+        for i in range(1, 16):
+            default_tables.append({"tenant_id": tid, "number": i, "name": f"Mesa {i}", "seats": 4, "status": "free", "area": "Salão", "created_at": datetime.now(timezone.utc).isoformat()})
+        await db.restaurant_tables.insert_many(default_tables)
+        tables = await db.restaurant_tables.find({"tenant_id": tid}).sort("number", 1).to_list(100)
+    return serialize_list(tables)
+
+
+@router.post("/tables")
+async def create_table(data: dict, request: Request):
+    from server import db
+    tid, user = await get_pdv_user(request)
+    data["tenant_id"] = tid
+    data["status"] = "free"
+    data["created_at"] = datetime.now(timezone.utc).isoformat()
+    result = await db.restaurant_tables.insert_one(data)
+    data["_id"] = str(result.inserted_id)
+    return data
+
+
+@router.patch("/tables/{table_id}/status")
+async def update_table_status(table_id: str, data: dict, request: Request):
+    from server import db
+    tid, user = await get_pdv_user(request)
+    await db.restaurant_tables.update_one(
+        {"_id": ObjectId(table_id), "tenant_id": tid},
+        {"$set": {"status": data.get("status", "free"), "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    table = await db.restaurant_tables.find_one({"_id": ObjectId(table_id)})
+    return serialize_doc(table)
+
+
+# ===== TABLE ORDERS (Comandas) =====
+@router.get("/table-orders")
+async def list_table_orders(request: Request, table_id: Optional[str] = None, status: Optional[str] = None):
+    from server import db
+    tid, user = await get_pdv_user(request)
+    query = {"tenant_id": tid}
+    if table_id:
+        query["table_id"] = table_id
+    if status:
+        query["status"] = status
+    else:
+        query["status"] = {"$in": ["open", "in_progress"]}
+    orders = await db.table_orders.find(query).sort("created_at", -1).to_list(100)
+    return serialize_list(orders)
+
+
+@router.post("/table-orders")
+async def create_table_order(data: dict, request: Request):
+    from server import db
+    tid, user = await get_pdv_user(request)
+
+    last = await db.table_orders.find({"tenant_id": tid}).sort("created_at", -1).limit(1).to_list(1)
+    num = 1
+    if last:
+        try:
+            num = int(last[0].get("order_number", "CMD-0").split("-")[1]) + 1
+        except:
+            num = 1
+
+    doc = {
+        "tenant_id": tid,
+        "order_number": f"CMD-{num:04d}",
+        "table_id": data.get("table_id"),
+        "table_name": data.get("table_name"),
+        "customer_name": data.get("customer_name", ""),
+        "people_count": data.get("people_count", 1),
+        "items": data.get("items", []),
+        "subtotal": 0,
+        "service_fee": 0,
+        "discount": 0,
+        "total": 0,
+        "notes": data.get("notes", ""),
+        "status": "open",
+        "opened_by": user.get("name"),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    result = await db.table_orders.insert_one(doc)
+
+    # Update table status
+    if data.get("table_id"):
+        await db.restaurant_tables.update_one(
+            {"_id": ObjectId(data["table_id"]), "tenant_id": tid},
+            {"$set": {"status": "occupied", "current_order_id": str(result.inserted_id)}}
+        )
+
+    doc["_id"] = str(result.inserted_id)
+    return doc
+
+
+@router.post("/table-orders/{order_id}/items")
+async def add_items_to_order(order_id: str, data: dict, request: Request):
+    from server import db
+    tid, user = await get_pdv_user(request)
+    items = data.get("items", [])
+    for item in items:
+        item["added_at"] = datetime.now(timezone.utc).isoformat()
+        item["added_by"] = user.get("name")
+        item["status"] = "pending"
+
+    order = await db.table_orders.find_one({"_id": ObjectId(order_id), "tenant_id": tid})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    existing_items = order.get("items", [])
+    all_items = existing_items + items
+    subtotal = sum(i.get("quantity", 0) * i.get("unit_price", 0) for i in all_items)
+    service_fee = round(subtotal * 0.1, 2)  # 10% service
+    total = subtotal + service_fee - order.get("discount", 0)
+
+    await db.table_orders.update_one(
+        {"_id": ObjectId(order_id)},
+        {"$set": {"items": all_items, "subtotal": subtotal, "service_fee": service_fee, "total": total, "status": "in_progress"}}
+    )
+    updated = await db.table_orders.find_one({"_id": ObjectId(order_id)})
+    return serialize_doc(updated)
+
+
+@router.patch("/table-orders/{order_id}/close")
+async def close_table_order(order_id: str, data: dict, request: Request):
+    from server import db
+    tid, user = await get_pdv_user(request)
+    order = await db.table_orders.find_one({"_id": ObjectId(order_id), "tenant_id": tid})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    payment_method = data.get("payment_method", "dinheiro")
+    split_count = data.get("split_count", 1)
+
+    # Create sale from table order
+    register = await db.cash_registers.find_one({"tenant_id": tid, "status": "open"})
+
+    last_sale = await db.sales.find({"tenant_id": tid}).sort("created_at", -1).limit(1).to_list(1)
+    sale_num = 1001
+    if last_sale:
+        try:
+            sale_num = int(last_sale[0].get("sale_number", "V-1000").split("-")[1]) + 1
+        except:
+            sale_num = 1001
+
+    sale_doc = {
+        "tenant_id": tid,
+        "sale_number": f"V-{sale_num}",
+        "client_name": order.get("customer_name") or f"Mesa {order.get('table_name', '')}",
+        "items": order.get("items", []),
+        "subtotal": order.get("subtotal", 0),
+        "service_fee": order.get("service_fee", 0),
+        "discount": order.get("discount", 0),
+        "total": order.get("total", 0),
+        "payment_method": payment_method,
+        "status": "completed",
+        "fiscal_status": "pendente",
+        "source": "pdv_restaurant",
+        "table_order_id": order_id,
+        "table_name": order.get("table_name"),
+        "cash_register_id": str(register["_id"]) if register else None,
+        "user_name": user.get("name"),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    sale_result = await db.sales.insert_one(sale_doc)
+
+    # Update cash register
+    if register:
+        await db.cash_registers.update_one({"_id": register["_id"]}, {"$inc": {"current_amount": order.get("total", 0), "total_sales": order.get("total", 0), "total_sales_count": 1}})
+
+    # Close order + free table
+    await db.table_orders.update_one({"_id": ObjectId(order_id)}, {"$set": {"status": "closed", "payment_method": payment_method, "closed_at": datetime.now(timezone.utc).isoformat(), "closed_by": user.get("name"), "sale_id": str(sale_result.inserted_id)}})
+
+    if order.get("table_id"):
+        await db.restaurant_tables.update_one({"_id": ObjectId(order["table_id"]), "tenant_id": tid}, {"$set": {"status": "free", "current_order_id": None}})
+
+    sale_doc["_id"] = str(sale_result.inserted_id)
+    return serialize_doc(sale_doc)
+
+
+@router.delete("/table-orders/{order_id}/items/{item_index}")
+async def remove_item_from_order(order_id: str, item_index: int, request: Request):
+    from server import db
+    tid, user = await get_pdv_user(request)
+    order = await db.table_orders.find_one({"_id": ObjectId(order_id), "tenant_id": tid})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    items = order.get("items", [])
+    if 0 <= item_index < len(items):
+        items.pop(item_index)
+    subtotal = sum(i.get("quantity", 0) * i.get("unit_price", 0) for i in items)
+    service_fee = round(subtotal * 0.1, 2)
+    total = subtotal + service_fee - order.get("discount", 0)
+    await db.table_orders.update_one({"_id": ObjectId(order_id)}, {"$set": {"items": items, "subtotal": subtotal, "service_fee": service_fee, "total": total}})
+    updated = await db.table_orders.find_one({"_id": ObjectId(order_id)})
+    return serialize_doc(updated)
+

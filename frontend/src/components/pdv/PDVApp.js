@@ -3,16 +3,18 @@ import api from '../../utils/api';
 import { formatCurrency } from '../../utils/helpers';
 import { useAuth } from '../../contexts/AuthContext';
 import { saveOfflineSale, getPendingSales, syncPendingSales, cacheProducts, getCachedProducts } from '../../utils/offlineDB';
+import RestaurantMode from './RestaurantMode';
 import {
   ShoppingCart, Search, Plus, Minus, Trash2, CreditCard, Banknote, Smartphone,
   LogOut, DoorOpen, DoorClosed, ArrowDownCircle, ArrowUpCircle, History, X, Wifi, WifiOff,
-  RefreshCw, CloudOff, CheckCircle2, AlertCircle, User
+  RefreshCw, CloudOff, CheckCircle2, AlertCircle, User, UtensilsCrossed, Store
 } from 'lucide-react';
 
 const LOGO = 'https://customer-assets.emergentagent.com/job_4e2cd625-ade9-4dd7-89bf-7caab1ef00f2/artifacts/tbyxp0yk_image.png';
 
 export default function PDVApp() {
   const { user, logout } = useAuth();
+  const [pdvMode, setPdvMode] = useState('varejo'); // 'varejo' or 'restaurante'
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
   const [search, setSearch] = useState('');
@@ -187,6 +189,17 @@ export default function PDVApp() {
           </div>
         </div>
         <div className="flex items-center gap-1.5">
+          {/* Mode switch */}
+          <div className="flex bg-slate-100 rounded-lg p-0.5 mr-1">
+            <button onClick={() => setPdvMode('varejo')} data-testid="pdv-mode-varejo"
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all ${pdvMode === 'varejo' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500'}`}>
+              <Store size={11} /> Varejo
+            </button>
+            <button onClick={() => setPdvMode('restaurante')} data-testid="pdv-mode-restaurante"
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all ${pdvMode === 'restaurante' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'}`}>
+              <UtensilsCrossed size={11} /> Restaurante
+            </button>
+          </div>
           {/* Online status */}
           <span className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-full font-medium ${isOnline ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`} data-testid="pdv-online-status">
             {isOnline ? <Wifi size={11} /> : <WifiOff size={11} />}

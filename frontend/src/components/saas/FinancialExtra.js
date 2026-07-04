@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import { formatCurrency, formatDate, formatDateTime } from '../../utils/helpers';
 import { PageHeader, DataTable, Badge, Modal, StatCard, EmptyState } from '../shared/UIComponents';
-import { Plus, Send, FileText, ShoppingCart, Search, Trash2, ArrowRight, ClipboardList, Copy, BadgePercent } from 'lucide-react';
+import { Plus, Send, FileText, ShoppingCart, Search, Trash2, ArrowRight, ClipboardList, Copy, BadgePercent, Download, Share2 } from 'lucide-react';
+import { generateQuotePDF } from '../../utils/quotePDF';
 
 // ===== QUOTES (Orçamentos) =====
 export function Quotes() {
@@ -13,11 +14,31 @@ export function Quotes() {
   const [form, setForm] = useState({ client_id: '', client_name: '', items: [], discount: 0, notes: '', validity_days: 15 });
   const [searchProd, setSearchProd] = useState('');
 
+  const [companyInfo, setCompanyInfo] = useState({});
+
   useEffect(() => { load(); }, []);
   const load = () => {
     api.get('/api/saas/quotes').then(r => setQuotes(r.data?.data || r.data || [])).catch(() => {});
     api.get('/api/saas/products').then(r => setProducts(r.data?.data || r.data || [])).catch(() => {});
     api.get('/api/saas/clients').then(r => setClients(r.data?.data || r.data || [])).catch(() => {});
+    api.get('/api/saas/settings').then(r => setCompanyInfo(r.data || {})).catch(() => {});
+  };
+
+  const downloadPDF = (quote) => {
+    const doc = generateQuotePDF(quote, companyInfo);
+    doc.save(`orcamento_${quote.quote_number || 'novo'}.pdf`);
+  };
+
+  const sharePDF = async (quote) => {
+    const doc = generateQuotePDF(quote, companyInfo);
+    const blob = doc.output('blob');
+    const file = new File([blob], `orcamento_${quote.quote_number}.pdf`, { type: 'application/pdf' });
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ title: `Orçamento ${quote.quote_number}`, text: `Orçamento para ${quote.client_name || 'cliente'}`, files: [file] });
+    } else {
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    }
   };
 
   const addItem = (prod) => {
@@ -61,10 +82,16 @@ export function Quotes() {
     { header: 'Status', render: r => <Badge variant={statusColors[r.status]}>{statusLabels[r.status] || r.status}</Badge> },
     { header: 'Validade', render: r => formatDate(r.expires_at) },
     { header: 'Ações', render: r => (
-      <div className="flex gap-1">
+      <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+        <button onClick={() => downloadPDF(r)} className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors flex items-center gap-1" title="Baixar PDF">
+          <Download size={10} /> PDF
+        </button>
+        <button onClick={() => sharePDF(r)} className="text-xs px-2 py-1 bg-purple-50 text-purple-600 rounded hover:bg-purple-100 transition-colors flex items-center gap-1" title="Compartilhar">
+          <Share2 size={10} />
+        </button>
         {r.status !== 'converted' && (
-          <button onClick={(e) => {e.stopPropagation(); convertToOrder(r);}} className="text-xs px-2 py-1 bg-emerald-50 text-emerald-600 rounded hover:bg-emerald-100 transition-colors flex items-center gap-1">
-            <ArrowRight size={10} /> Gerar Pedido
+          <button onClick={() => convertToOrder(r)} className="text-xs px-2 py-1 bg-emerald-50 text-emerald-600 rounded hover:bg-emerald-100 transition-colors flex items-center gap-1">
+            <ArrowRight size={10} /> Pedido
           </button>
         )}
       </div>

@@ -39,3 +39,8 @@ apps/fiscal-service/storage/logs/*
 .DS_Store
 *.log
 coverage/
+.env.*
+*.env
+credentials.json
+*.pem
+.credentials
