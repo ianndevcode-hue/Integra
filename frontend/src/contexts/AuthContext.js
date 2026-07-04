@@ -8,6 +8,12 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const checkAuth = useCallback(async () => {
+    const token = localStorage.getItem('integra_token');
+    if (!token) {
+      setUser(false);
+      setLoading(false);
+      return;
+    }
     try {
       const res = await api.get('/api/auth/me');
       setUser(res.data);
@@ -24,7 +30,6 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     const res = await api.post('/api/auth/login', { email, password });
     const data = res.data;
-    // Store token in localStorage as fallback for cookie issues
     if (data.token) {
       localStorage.setItem('integra_token', data.token);
     }

@@ -1,19 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { formatApiError } from '../../utils/api';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
+import api from '../../utils/api';
 
 const LOGO_URL = 'https://customer-assets.emergentagent.com/job_4e2cd625-ade9-4dd7-89bf-7caab1ef00f2/artifacts/tbyxp0yk_image.png';
 
 export default function LoginPage({ appType = 'saas', redirectTo = '/app' }) {
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Clear any stale tokens when landing on login page
+  useEffect(() => {
+    localStorage.removeItem('integra_token');
+  }, []);
+
+  // If already logged in, redirect
+  useEffect(() => {
+    if (user && user.id) {
+      if (appType === 'admin' && user.role !== 'super_admin') return;
+      navigate(redirectTo, { replace: true });
+    }
+  }, [user, navigate, redirectTo, appType]);
 
   const accentColors = {
     admin: { bg: 'bg-brand-purple', hover: 'hover:bg-brand-purple-hover', ring: 'focus:ring-purple-300', border: 'border-purple-200' },
@@ -30,19 +43,35 @@ export default function LoginPage({ appType = 'saas', redirectTo = '/app' }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!email.trim() || !password.trim()) {
+      setError('Preencha email e senha.');
+      return;
+    }
     setError('');
     setLoading(true);
     try {
-      const userData = await login(email, password);
+      const userData = await login(email.trim(), password);
       if (appType === 'admin' && userData.role !== 'super_admin') {
         setError('Acesso restrito a administradores do sistema.');
+        localStorage.removeItem('integra_token');
         setLoading(false);
         return;
       }
-      // Use React Router navigate instead of window.location.href
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      setError(formatApiError(err));
+      const status = err?.response?.status;
+      const detail = err?.response?.data?.detail;
+      if (status === 401) {
+        setError(typeof detail === 'string' ? detail : 'Email ou senha incorretos.');
+      } else if (status === 403) {
+        setError(typeof detail === 'string' ? detail : 'Conta desativada.');
+      } else if (status === 429) {
+        setError(typeof detail === 'string' ? detail : 'Muitas tentativas. Aguarde 15 minutos.');
+      } else if (err?.code === 'ERR_NETWORK' || !err?.response) {
+        setError('Erro de conexão com o servidor. Verifique sua internet.');
+      } else {
+        setError(typeof detail === 'string' ? detail : 'Erro ao fazer login. Tente novamente.');
+      }
     } finally {
       setLoading(false);
     }
@@ -75,6 +104,7 @@ export default function LoginPage({ appType = 'saas', redirectTo = '/app' }) {
                 className={`w-full px-3 py-2.5 border ${colors.border} rounded-lg text-sm focus:outline-none focus:ring-2 ${colors.ring} transition-all`}
                 placeholder="seu@email.com"
                 required
+                autoComplete="email"
               />
             </div>
             <div>
@@ -88,6 +118,7 @@ export default function LoginPage({ appType = 'saas', redirectTo = '/app' }) {
                   className={`w-full px-3 py-2.5 border ${colors.border} rounded-lg text-sm focus:outline-none focus:ring-2 ${colors.ring} transition-all pr-10`}
                   placeholder="Sua senha"
                   required
+                  autoComplete="current-password"
                 />
                 <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                   {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -104,6 +135,14 @@ export default function LoginPage({ appType = 'saas', redirectTo = '/app' }) {
               {loading ? 'Entrando...' : 'Entrar'}
             </button>
           </form>
+
+          <div className="mt-6 pt-4 border-t border-slate-100">
+            <p className="text-[11px] text-slate-400 text-center">
+              {appType === 'admin' && 'Acesso restrito a administradores Integra Code'}
+              {appType === 'saas' && 'Acesse com suas credenciais de empresa'}
+              {appType === 'pdv' && 'Acesse com suas credenciais de operador'}
+            </p>
+          </div>
         </div>
       </div>
     </div>

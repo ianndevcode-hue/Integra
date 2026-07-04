@@ -225,12 +225,19 @@ async def lifespan(app: FastAPI):
 # ===== APP =====
 app = FastAPI(title="Integra SYS API", version="2.0.0", lifespan=lifespan)
 
+frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+app_url = os.environ.get("APP_URL", "")
+cors_origins = [frontend_url, "http://localhost:3000"]
+if app_url and app_url not in cors_origins:
+    cors_origins.append(app_url)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[os.environ.get("FRONTEND_URL", "http://localhost:3000"), "http://localhost:3000"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Import and include routers
