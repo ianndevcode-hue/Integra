@@ -27,9 +27,16 @@ import SaaSVehicles from './components/saas/SaaSVehicles';
 import SaaSClients from './components/saas/SaaSClients';
 import SaaSSuppliers from './components/saas/SaaSSuppliers';
 import SaaSInventory from './components/saas/SaaSInventory';
+import StockEntries from './components/saas/StockEntries';
+import StockExits from './components/saas/StockExits';
+import { StockAdjustments, StockTransfers } from './components/saas/StockOther';
 import SaaSSales from './components/saas/SaaSSales';
 import SaaSFinancial from './components/saas/SaaSFinancial';
+import Receivables from './components/saas/Receivables';
+import Payables from './components/saas/Payables';
+import { Transactions, Commissions, Quotes, Orders } from './components/saas/FinancialExtra';
 import SaaSFiscal from './components/saas/SaaSFiscal';
+import { NFePage, NFCePage, FiscalReports, AdminAlerts } from './components/saas/FiscalPages';
 import SaaSReports from './components/saas/SaaSReports';
 import SaaSUsers from './components/saas/SaaSUsers';
 import SaaSPermissions from './components/saas/SaaSPermissions';
@@ -61,11 +68,14 @@ function AdminRoutes() {
           <Route path="licenses" element={<AdminLicenses />} />
           <Route path="plans" element={<AdminPlans />} />
           <Route path="modules" element={<AdminModules />} />
+          <Route path="module-editor" element={<AdminModules />} />
           <Route path="resellers" element={<AdminResellers />} />
           <Route path="api-keys" element={<AdminApiKeys />} />
           <Route path="webhooks" element={<AdminWebhooks />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="logs" element={<AdminLogs />} />
+          <Route path="alerts" element={<AdminAlerts />} />
+          <Route path="reports" element={<AdminDashboard />} />
           <Route path="support" element={<AdminSupport />} />
           <Route path="settings" element={<AdminSettings />} />
         </Routes>
@@ -79,17 +89,37 @@ function SaaSRoutes() {
     <ProtectedRoute requiredRoles={['admin', 'manager', 'seller', 'cashier']} redirectTo="/app/login">
       <SaaSLayout>
         <Routes>
+          {/* Vendas */}
           <Route index element={<SaaSDashboard />} />
+          <Route path="sales" element={<SaaSSales />} />
+          <Route path="quotes" element={<Quotes />} />
+          <Route path="orders" element={<Orders />} />
+          {/* Cadastros */}
           <Route path="products" element={<SaaSProducts />} />
           <Route path="services" element={<SaaSServices />} />
           <Route path="real-estate" element={<SaaSRealEstate />} />
           <Route path="vehicles" element={<SaaSVehicles />} />
           <Route path="clients" element={<SaaSClients />} />
           <Route path="suppliers" element={<SaaSSuppliers />} />
+          {/* Estoque */}
           <Route path="inventory" element={<SaaSInventory />} />
-          <Route path="sales" element={<SaaSSales />} />
+          <Route path="stock-entries" element={<StockEntries />} />
+          <Route path="stock-exits" element={<StockExits />} />
+          <Route path="stock-adjustments" element={<StockAdjustments />} />
+          <Route path="stock-transfers" element={<StockTransfers />} />
+          {/* Financeiro */}
           <Route path="financial" element={<SaaSFinancial />} />
+          <Route path="receivables" element={<Receivables />} />
+          <Route path="payables" element={<Payables />} />
+          <Route path="cashflow" element={<SaaSFinancial />} />
+          <Route path="transactions" element={<Transactions />} />
+          <Route path="commissions" element={<Commissions />} />
+          {/* Fiscal */}
           <Route path="fiscal" element={<SaaSFiscal />} />
+          <Route path="nfe" element={<NFePage />} />
+          <Route path="nfce" element={<NFCePage />} />
+          <Route path="fiscal-reports" element={<FiscalReports />} />
+          {/* Gestão */}
           <Route path="reports" element={<SaaSReports />} />
           <Route path="users" element={<SaaSUsers />} />
           <Route path="permissions" element={<SaaSPermissions />} />

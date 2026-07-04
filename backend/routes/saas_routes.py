@@ -879,3 +879,77 @@ async def create_support_ticket(data: dict, request: Request):
     data["_id"] = str(result.inserted_id)
     data["id"] = data["_id"]
     return data
+
+
+# ===== STOCK MOVEMENTS =====
+@router.get("/stock-movements")
+async def list_stock_movements(request: Request, type: Optional[str] = None, page: int = 1, limit: int = 50):
+    from server import db
+    tid, user = await get_tenant_id(request)
+    query = {"tenant_id": tid}
+    if type:
+        query["type"] = type
+    total = await db.stock_movements.count_documents(query)
+    skip = (page - 1) * limit
+    items = await db.stock_movements.find(query).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    return {"data": serialize_list(items), "total": total, "page": page}
+
+
+@router.post("/stock-movements")
+async def create_stock_movement(data: dict, request: Request):
+    from server import db
+    tid, user = await get_tenant_id(request)
+    data["tenant_id"] = tid
+    data["user_name"] = user.get("name")
+    data["created_at"] = datetime.now(timezone.utc).isoformat()
+    qty = float(data.get("quantity", 0))
+    product_id = data.get("product_id")
+    
+    result = await db.stock_movements.insert_one(data)
+    
+    # Update product stock
+    if product_id:
+        try:
+            inc = qty if data.get("type") == "entry" else -qty
+            await db.products.update_one({"_id": ObjectId(product_id), "tenant_id": tid}, {"$inc": {"stock_quantity": inc}})
+        except:
+            pass
+    
+    data["_id"] = str(result.inserted_id)
+    data["id"] = data["_id"]
+    return data
+
+
+# ===== CASHFLOW =====
+@router.get("/cashflow")
+async def get_cashflow(request: Request):
+    from server import db
+    tid, user = await get_tenant_id(request)
+    
+    entries = await db.financial.find({"tenant_id": tid}).to_list(1000)
+    sales = await db.sales.find({"tenant_id": tid, "status": "completed"}).to_list(1000)
+    
+    monthly = {}
+    for entry in entries:
+        month = (entry.get("due_date") or entry.get("created_at", ""))[:7]
+        if not month:
+            continue
+        if month not in monthly:
+            monthly[month] = {"month": month, "income": 0, "expense": 0}
+        if entry.get("type") == "receivable" and entry.get("status") == "paid":
+            monthly[month]["income"] += entry.get("amount", 0)
+        elif entry.get("type") == "payable" and entry.get("status") == "paid":
+            monthly[month]["expense"] += entry.get("amount", 0)
+    
+    for sale in sales:
+        month = (sale.get("created_at") or "")[:7]
+        if not month:
+            continue
+        if month not in monthly:
+            monthly[month] = {"month": month, "income": 0, "expense": 0}
+        monthly[month]["income"] += sale.get("total", 0)
+    
+    flow = sorted(monthly.values(), key=lambda x: x["month"])
+    for item in flow:
+        item["balance"] = round(item["income"] - item["expense"], 2)
+    return flow
