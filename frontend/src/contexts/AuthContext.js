@@ -12,6 +12,7 @@ export function AuthProvider({ children }) {
       const res = await api.get('/api/auth/me');
       setUser(res.data);
     } catch {
+      localStorage.removeItem('integra_token');
       setUser(false);
     } finally {
       setLoading(false);
@@ -22,12 +23,18 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const res = await api.post('/api/auth/login', { email, password });
-    setUser(res.data);
-    return res.data;
+    const data = res.data;
+    // Store token in localStorage as fallback for cookie issues
+    if (data.token) {
+      localStorage.setItem('integra_token', data.token);
+    }
+    setUser(data);
+    return data;
   };
 
   const logout = async () => {
     try { await api.post('/api/auth/logout'); } catch {}
+    localStorage.removeItem('integra_token');
     setUser(false);
   };
 

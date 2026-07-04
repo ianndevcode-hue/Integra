@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatApiError } from '../../utils/api';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
@@ -7,6 +8,7 @@ const LOGO_URL = 'https://customer-assets.emergentagent.com/job_4e2cd625-ade9-4d
 
 export default function LoginPage({ appType = 'saas', redirectTo = '/app' }) {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -34,9 +36,11 @@ export default function LoginPage({ appType = 'saas', redirectTo = '/app' }) {
       const userData = await login(email, password);
       if (appType === 'admin' && userData.role !== 'super_admin') {
         setError('Acesso restrito a administradores do sistema.');
+        setLoading(false);
         return;
       }
-      window.location.href = redirectTo;
+      // Use React Router navigate instead of window.location.href
+      navigate(redirectTo, { replace: true });
     } catch (err) {
       setError(formatApiError(err));
     } finally {

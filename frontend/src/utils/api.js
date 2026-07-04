@@ -6,6 +6,30 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' }
 });
 
+// Intercept requests to add Bearer token from localStorage as fallback
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('integra_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Intercept 401 responses to clear token
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error?.response?.status === 401 && !error.config.url?.includes('/auth/login')) {
+      // Don't clear on login attempts
+      const isAuthCheck = error.config.url?.includes('/auth/me');
+      if (!isAuthCheck) {
+        localStorage.removeItem('integra_token');
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export function formatApiError(error) {
   const detail = error?.response?.data?.detail;
   if (detail == null) return 'Algo deu errado. Tente novamente.';
