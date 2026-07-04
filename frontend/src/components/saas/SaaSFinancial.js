@@ -11,7 +11,7 @@ export default function SaaSFinancial() {
   const [form, setForm] = useState({ type: 'receivable', description: '', amount: 0, due_date: '', category: '' });
 
   useEffect(() => { loadEntries(); }, []);
-  const loadEntries = () => api.get('/api/saas/financial').then(r => setEntries(r.data)).catch(() => {});
+  const loadEntries = () => api.get('/api/saas/financial').then(r => setEntries(r.data?.data || r.data || [])).catch(() => {});
 
   const filtered = filter === 'all' ? entries : entries.filter(e => e.type === filter);
 

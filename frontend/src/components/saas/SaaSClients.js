@@ -10,7 +10,7 @@ export default function SaaSClients() {
   const [form, setForm] = useState({ name: '', document: '', document_type: 'CPF', email: '', phone: '' });
 
   useEffect(() => { loadClients(); }, []);
-  const loadClients = () => api.get('/api/saas/clients').then(r => setClients(r.data)).catch(() => {});
+  const loadClients = () => api.get('/api/saas/clients').then(r => setClients(r.data?.data || r.data || [])).catch(() => {});
 
   const filtered = clients.filter(c => c.name?.toLowerCase().includes(search.toLowerCase()) || c.document?.includes(search));
 

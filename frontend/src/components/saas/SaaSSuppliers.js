@@ -9,7 +9,7 @@ export default function SaaSSuppliers() {
   const [form, setForm] = useState({ name: '', cnpj: '', email: '', phone: '' });
 
   useEffect(() => { loadSuppliers(); }, []);
-  const loadSuppliers = () => api.get('/api/saas/suppliers').then(r => setSuppliers(r.data)).catch(() => {});
+  const loadSuppliers = () => api.get('/api/saas/suppliers').then(r => setSuppliers(r.data?.data || r.data || [])).catch(() => {});
 
   const handleCreate = async (e) => {
     e.preventDefault();

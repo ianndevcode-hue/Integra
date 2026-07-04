@@ -6,7 +6,7 @@ import { FileText } from 'lucide-react';
 
 export default function AdminLogs() {
   const [logs, setLogs] = useState([]);
-  useEffect(() => { api.get('/api/admin/logs').then(r => setLogs(r.data)).catch(() => {}); }, []);
+  useEffect(() => { api.get('/api/admin/logs').then(r => setLogs(r.data?.data || r.data || [])).catch(() => {}); }, []);
 
   return (
     <div data-testid="admin-logs-page">

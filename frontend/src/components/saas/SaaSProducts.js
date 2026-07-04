@@ -11,7 +11,7 @@ export default function SaaSProducts() {
   const [form, setForm] = useState({ name: '', sku: '', barcode: '', category: '', unit: 'UN', cost_price: 0, sale_price: 0, stock_quantity: 0, min_stock: 0, ncm: '', cfop: '5102' });
 
   useEffect(() => { loadProducts(); }, []);
-  const loadProducts = () => api.get('/api/saas/products').then(r => setProducts(r.data)).catch(() => {});
+  const loadProducts = () => api.get('/api/saas/products').then(r => setProducts(r.data?.data || r.data || [])).catch(() => {});
 
   const filtered = products.filter(p => p.name?.toLowerCase().includes(search.toLowerCase()) || p.sku?.toLowerCase().includes(search.toLowerCase()));
 

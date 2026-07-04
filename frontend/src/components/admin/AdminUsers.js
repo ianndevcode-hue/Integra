@@ -4,7 +4,7 @@ import { PageHeader, DataTable, Badge } from '../shared/UIComponents';
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
-  useEffect(() => { api.get('/api/admin/users').then(r => setUsers(r.data)).catch(() => {}); }, []);
+  useEffect(() => { api.get('/api/admin/users').then(r => setUsers(r.data?.data || r.data || [])).catch(() => {}); }, []);
 
   const roleLabels = { super_admin: 'Super Admin', admin: 'Admin', manager: 'Gerente', seller: 'Vendedor', cashier: 'Caixa', user: 'Usuário' };
   const roleColors = { super_admin: 'purple', admin: 'info', manager: 'warning', seller: 'default', cashier: 'success', user: 'default' };

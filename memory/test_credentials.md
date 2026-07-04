@@ -12,7 +12,7 @@
 - Role: admin
 - Access: /app
 
-## Manager (Web SaaS)
+## Manager
 - Email: gerente@empresademo.com.br
 - Password: Demo@2024
 - Role: manager
@@ -23,9 +23,7 @@
 - Role: cashier
 - Access: /pdv
 
-## Auth Endpoints
-- POST /api/auth/login
-- POST /api/auth/register
-- POST /api/auth/logout
-- GET /api/auth/me
-- POST /api/auth/refresh
+## Seller
+- Email: vendedor@empresademo.com.br
+- Password: Demo@2024
+- Role: seller

@@ -13,7 +13,7 @@ export default function AdminTenants() {
   useEffect(() => { loadTenants(); }, []);
 
   const loadTenants = () => {
-    api.get('/api/admin/tenants').then(r => setTenants(r.data)).catch(() => {}).finally(() => setLoading(false));
+    api.get('/api/admin/tenants').then(r => setTenants(r.data?.data || r.data || [])).catch(() => {}).finally(() => setLoading(false));
   };
 
   const handleCreate = async (e) => {

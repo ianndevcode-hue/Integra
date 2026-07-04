@@ -5,7 +5,7 @@ import { PageHeader, DataTable, Badge } from '../shared/UIComponents';
 
 export default function SaaSSales() {
   const [sales, setSales] = useState([]);
-  useEffect(() => { api.get('/api/saas/sales').then(r => setSales(r.data)).catch(() => {}); }, []);
+  useEffect(() => { api.get('/api/saas/sales').then(r => setSales(r.data?.data || r.data || [])).catch(() => {}); }, []);
 
   const columns = [
     { header: 'Venda', render: r => <span className="font-medium text-slate-900">{r.sale_number}</span> },

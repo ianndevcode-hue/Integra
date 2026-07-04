@@ -8,7 +8,7 @@ export default function AdminLicenses() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get('/api/admin/licenses').then(r => setLicenses(r.data)).catch(() => {}).finally(() => setLoading(false));
+    api.get('/api/admin/licenses').then(r => setLicenses(r.data?.data || r.data || [])).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   const columns = [
