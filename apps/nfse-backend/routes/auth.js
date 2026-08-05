@@ -2,9 +2,17 @@ const express = require('express');
 const router = express.Router();
 const { readFile, writeFile } = require('../services/DatabaseService');
 
+const DEFAULT_USERS = [
+  { id: 1, name: 'Integra Code', email: 'admin@integracode.com.br', password: 'admin123', role: 'admin' },
+];
+
 router.post('/login', (req, res) => {
   const { email, password } = req.body;
-  const users = readFile('users.json', []);
+  let users = readFile('users.json', []);
+  if (users.length === 0) {
+    users = DEFAULT_USERS;
+    writeFile('users.json', users);
+  }
   const user = users.find(u => u.email === email && u.password === password);
   if (!user) return res.status(401).json({ error: 'Credenciais invalidas' });
   const token = Buffer.from(`${user.id}:${Date.now()}`).toString('base64');

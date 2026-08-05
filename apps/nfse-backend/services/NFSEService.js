@@ -51,7 +51,7 @@ function buildNFSE(payload, company) {
     observacoes: payload.observacoes || '',
     cliente: payload.cliente || null,
     servicos: payload.servicos || [],
-    empresa,
+    empresa: company,
     rps: {
       numero: getNextId('rps.json', 'numero'),
       serie: payload.rpsSerie || '1',
@@ -125,6 +125,23 @@ async function transmitToMunicipality(nfse) {
 
 async function emitNFSE(payload, company) {
   const nfse = buildNFSE(payload, company);
+
+  if (!process.env.NFS_E_WEBSERVICE_URL) {
+    nfse.status = 'GERADA';
+    nfse.statusHistorico.push({ status: 'GERADA', data: now(), mensagem: 'NFS-e gerada localmente. Configure o webservice municipal para transmitir.' });
+
+    const pdfPath = await generateNFSEDocument(nfse, company, nfse.cliente, nfse.servicos);
+    nfse.pdfPath = pdfPath;
+
+    const nfses = readFile('nfse.json', []);
+    const idx = nfses.findIndex(n => n.id === nfse.id);
+    if (idx >= 0) {
+      nfses[idx] = nfse;
+      writeFile('nfse.json', nfses);
+    }
+    return nfse;
+  }
+
   const transmission = await transmitToMunicipality(nfse);
 
   if (transmission.success || transmission.Protocolo) {
