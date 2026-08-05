@@ -126,5 +126,6 @@ export interface Cobranca {
 export interface AppConfig {
   apiUrl: string;
   internalKey: string;
+  asaasKey: string;
   empresa: Empresa;
 }

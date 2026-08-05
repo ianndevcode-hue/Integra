@@ -6,6 +6,7 @@ const STORAGE_KEY = '@integra_nfse_config';
 const defaultConfig: AppConfig = {
   apiUrl: 'http://localhost:3335',
   internalKey: 'integra-nfse-internal-key-2024',
+  asaasKey: '',
   empresa: {
     razaoSocial: 'Integra Code Solucoes em Tecnologia LTDA',
     nomeFantasia: 'Integra Code',
@@ -15,7 +16,7 @@ const defaultConfig: AppConfig = {
     numero: '123',
     complemento: 'Sala 1',
     bairro: 'Centro',
-    cidade: 'Sao Paulo',
+    cidade: 'Marilia',
     uf: 'SP',
     cep: '00000000',
     telefone: '11999999999',
@@ -63,6 +64,7 @@ export async function api<T>(endpoint: string, options: RequestInit = {}): Promi
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'X-Internal-Key': config.internalKey,
+    ...(config.asaasKey ? { 'X-Asaas-Key': config.asaasKey } : {}),
     ...(options.headers as Record<string, string> || {}),
   };
 

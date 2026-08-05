@@ -1,68 +1,56 @@
-# Integra NFS-e — Gerador de NFS-e para Android
+# Integra NFS-e — Marília/SP + Asaas (APK)
 
-Aplicativo **APK** da **Integra Code** para emissão e consulta de **NFS-e**
-(Nota Fiscal de Serviço Eletrônica), com gestão de clientes, serviços/produtos,
-cobranças e pagamentos via **Asaas API**.
+App da **Integra Code** para emitir/consultar **NFS-e** de **Marília-SP**, com
+cobranças via **Asaas** e a **chave Asaas configurável dentro do próprio app**.
 
-## Funcionalidades
-- Emissão de NFS-e (geração local + transmissão municipal configurável)
-- Consulta de notas emitidas (por CNPJ, status, período)
-- Cadastro de clientes e serviços/produtos
-- Geração de cobrança com ou sem emissão de nota, via **Asaas** (Boleto, PIX, Cartão, etc.)
-- PDF da NFS-e e compartilhamento
-- Branding Integra Code (logo + fundo)
-- 100% funcional: basta inserir os dados da empresa e emitir
+## O que já está pronto
+- Município configurado para **Marília/SP** (código IBGE 3543402, padrão ABRASF / Softbase ISS.NET).
+- Tela de **Configurações** no app com campo para colar a **Chave API Asaas** (sem mexer no backend).
+- Emissão de NFS-e, consulta, clientes, serviços e cobranças/PIX/boleto via Asaas.
+- Backend testado (emissão gera PDF, status `GERADA` quando o webservice municipal não está configurado).
 
-## Estrutura
-```
-nfse-mobile/   -> App React Native (Expo) -> gera o APK
-nfse-backend/  -> API Node.js (Express) que o app consome
-```
-
-## Backend (API)
+## 1) Backend (API)
 ```bash
 cd nfse-backend
-cp .env.example .env      # edite com seus dados (CNPJ, Asaas, etc.)
-npm install
-npm start                 # roda em http://localhost:3335
+cp .env.example .env
+# Edite: EMPRESA_* (seus dados), NFS_E_WEBSERVICE_URL (URL do RPS de Marília),
+#        NFS_E_CERTIFICADO_PATH / SENHA (seu certificado A1)
+npm install && npm start        # http://localhost:3335
 ```
-Endpoints:
-- `POST /api/auth/login`
-- `GET/POST /api/clients`, `/api/services`
-- `POST /api/nfse/emitir`, `GET /api/nfse/listar`, `/api/nfse/consultar/:id`, `/api/nfse/pdf/:id`, `/api/nfse/cancelar/:id`
-- `POST/GET /api/charges` (integração Asaas)
 
-Para **transmitir a NFS-e ao município**, preencha no `.env`:
-`NFS_E_WEBSERVICE_URL`, `NFS_E_CERTIFICADO_PATH`, `NFS_E_CERTIFICADO_SENHA`.
-Sem isso, a nota é **GERADA localmente** (PDF + dados) e fica pronta para transmissão.
+## 2) App — colocar a chave Asaas no app
+No app: **Configurações** → cole a `Chave API Asaas` (ex.: `$aact_...`). Ela é
+enviada em cada chamada para o backend (`X-Asaas-Key`), então **não precisa**
+editar o `.env`. Também ajuste a **URL da API** para o IP da máquina que roda o
+backend (ex.: `http://10.0.2.2:3335` no emulador, ou o IP da rede no celular).
 
-## App (APK)
+## 3) Gerar o APK
+O APK exige Android SDK / rede para os servidores do Google. No seu computador
+(com Node + rede liberada):
+
+**Opção A — Nuvem (mais fácil, sem Android Studio):**
+```bash
+cd nfse-mobile
+chmod +x build-apk.sh
+./build-apk.sh          # faz login na Expo e gera o .apk na nuvem
+```
+Baixe o `.apk` do link exibido e instale no Android.
+
+**Opção B — Local (precisa de Android Studio / SDK + JDK 17):**
 ```bash
 cd nfse-mobile
 npm install
+npx expo prebuild --platform android
+cd android
+./gradlew assembleRelease        # ou assembleDebug
+# APK em android/app/build/outputs/apk/release/app-release.apk
 ```
 
-### Build do APK (nuvem — não precisa de Android Studio)
-1. Crie conta em https://expo.dev e rode `npx eas login`
-2. `npx eas build --platform android --profile preview`
-3. Baixe o `.apk` gerado e instale no Android.
-
-### Build local (precisa de Android SDK / Android Studio)
-```bash
-npx expo prebuild
-npx expo run:android
-```
-
-### Rodar em emulador / dispositivo (dev)
-```bash
-npx expo start --android
-```
-No app, em **Configurações**, ajuste a **URL da API** para o IP da máquina
-(ex.: `http://10.0.2.2:3335` no emulador Android) e os dados da empresa.
-
-Login padrão: `admin@integracode.com.br` / `admin123`
-
-## Observações
-- NFS-e é municipal: cada cidade tem seu webservice. O backend já tem o
-  estrutura pronta; basta configurar a URL e o certificado digital (A1).
-- Asaas exige a `ASAAS_API_KEY` no `.env` do backend para cobranças reais.
+## Observações sobre Marília
+- A NFS-e de Marília usa o padrão **ABRASF** (provedor Softbase ISS.NET).
+- Para **transmitir de verdade** para o município, informe no `.env` a
+  `NFS_E_WEBSERVICE_URL` (endpoint de envio de lote RPS do portal da NFS-e de
+  Marília) e o caminho do seu **certificado digital A1** + senha.
+- Sem isso, a nota é **GERADA** localmente (PDF + dados prontos), e basta
+  preencher a URL/certificado para transmitir.
+- Login padrão do app: `admin@integracode.com.br` / `admin123`.

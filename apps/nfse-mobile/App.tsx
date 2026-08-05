@@ -48,8 +48,13 @@ export default function App() {
 
   const [empresa, setEmpresa] = useState<Empresa>(defaultConfig.empresa);
   const [apiUrl, setApiUrl] = useState('');
+  const [asaasKey, setAsaasKey] = useState('');
 
   useEffect(() => { (async () => {
+    const cfg = await getConfig();
+    setApiUrl(cfg.apiUrl || '');
+    setAsaasKey(cfg.asaasKey || '');
+    setEmpresa(cfg.empresa || defaultConfig.empresa);
     const t = await getToken();
     if (t) { setScreen('dashboard'); loadData(); }
   })(); }, []);
@@ -163,7 +168,7 @@ export default function App() {
   }
 
   async function saveSettings() {
-    await setConfig({ apiUrl, empresa });
+    await setConfig({ apiUrl, asaasKey, empresa });
     Alert.alert('Salvo', 'Configuracoes atualizadas');
   }
 
@@ -484,6 +489,9 @@ export default function App() {
 
           <Text style={styles.label}>URL da API</Text>
           <TextInput style={styles.input} value={apiUrl} onChangeText={setApiUrl} placeholder="http://10.0.2.2:3335" />
+
+          <Text style={styles.label}>Chave API Asaas</Text>
+          <TextInput style={styles.input} value={asaasKey} onChangeText={setAsaasKey} placeholder="seu_token_asaas" autoCapitalize="none" secureTextEntry />
 
           <Text style={styles.label}>Razao Social</Text>
           <TextInput style={styles.input} value={empresa.razaoSocial} onChangeText={t => setEmpresa({ ...empresa, razaoSocial: t })} />
